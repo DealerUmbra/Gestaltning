@@ -90,6 +90,5 @@ public class HexGrid : MonoBehaviour {
         HexCell cell = cells[index];
         cell.color = color;
         hexMesh.Triangulate(cells);
-        print("Touched at " + coordinates.ToString());
     }
 }
