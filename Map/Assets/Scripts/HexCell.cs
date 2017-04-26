@@ -28,7 +28,14 @@ public class HexCell : MonoBehaviour {
 				}
 			}
 
-			Refresh();
+            if (Elevation > 4)
+                TerrainTypeIndex = 4;
+            else if (Elevation > 2)
+                TerrainTypeIndex = 2;
+            else
+                Irrigate();
+
+            Refresh();
 		}
 	}
 
@@ -43,7 +50,8 @@ public class HexCell : MonoBehaviour {
 			waterLevel = value;
 			ValidateRivers();
 			Refresh();
-		}
+            Irrigate();
+        }
 	}
 
 	public bool IsUnderwater {
@@ -321,17 +329,17 @@ public class HexCell : MonoBehaviour {
 		outgoingRiver = direction;
 		specialIndex = 0;
 
-        terrainTypeIndex = 1;
-
 		neighbor.RemoveIncomingRiver();
 		neighbor.hasIncomingRiver = true;
 		neighbor.incomingRiver = direction.Opposite();
 		neighbor.specialIndex = 0;
 
+        Irrigate();
+
         foreach(HexCell c in neighbors)
         {
             if(c)
-            c.PlacePlants();
+            c.Irrigate();
         }
 
 		SetRoad((int)direction, false);
@@ -341,20 +349,42 @@ public class HexCell : MonoBehaviour {
 		return roads[(int)direction];
 	}
 
-    public void PlacePlants()
+    public bool isTraversable(HexDirection origin, HexDirection destination)
+    {
+        bool traversable = false;
+        HexDirection riverOrigin = incomingRiver;
+        HexDirection riverDestination = outgoingRiver;
+        if ((origin < riverOrigin && destination > riverDestination) || (origin > riverOrigin && destination < riverDestination))
+            traversable = true;
+        return traversable;
+    }
+
+    public void Irrigate()
     {
         float waterCount = 0f;
         foreach (HexCell c in neighbors)
         {
             if (c) {
-                if (c.WaterLevel > c.Elevation)
-                    waterCount++;
-                if (c.HasRiver)
-                    waterCount += 0.5f;
+                if (c.IsUnderwater)
+                {
+                        waterCount++;
+                }
+                else if (Mathf.Abs(c.Elevation - Elevation) < 2)
+                {
+                    if (c.WaterLevel > c.Elevation)
+                        waterCount++;
+                    if (c.HasRiver)
+                        waterCount += 0.5f;
+                }
+
             }
             
         }
-        if (waterCount > 0) terrainTypeIndex = 1;
+        if ((waterCount > 0 || HasRiver) && Elevation <= 2) terrainTypeIndex = 1;
+        else if (Elevation <= 2)
+        {
+            terrainTypeIndex = 0;
+        }
         PlantLevel = Mathf.Min((int)waterCount, 3);
     }
 

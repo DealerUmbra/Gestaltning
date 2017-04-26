@@ -13,8 +13,6 @@ public class HexMapEditor : MonoBehaviour {
 
 	int activeUrbanLevel, activeFarmLevel, activePlantLevel, activeSpecialIndex;
 
-	int activeTerrainTypeIndex;
-
 	int brushSize;
 
 	bool editMode;
@@ -33,10 +31,6 @@ public class HexMapEditor : MonoBehaviour {
 	bool isDrag;
 	HexDirection dragDirection;
 	HexCell previousCell;
-
-	public void SetTerrainTypeIndex (int index) {
-		activeTerrainTypeIndex = index;
-	}
 
 	public void SetApplyElevation (bool toggle) {
 		applyElevation = toggle;
@@ -195,21 +189,14 @@ public class HexMapEditor : MonoBehaviour {
                 if (cell.GetNeighbor((HexDirection)i))
                 neighbors.Add(cell.GetNeighbor((HexDirection)i));
             }
-            if (activeTerrainTypeIndex >= 0) {
-				cell.TerrainTypeIndex = activeTerrainTypeIndex;
-			}
 			if (applyElevation) {
 				cell.Elevation = activeElevation;
-                if (cell.Elevation > 2)
-                    cell.TerrainTypeIndex = 2;
-                if (cell.Elevation > 4)
-                    cell.TerrainTypeIndex = 4;
 			}
 			if (applyWaterLevel) {
 				cell.WaterLevel = activeWaterLevel;
                 foreach(HexCell c in neighbors)
                 {
-                    c.PlacePlants();
+                    c.Irrigate();
                 }
 			}
 			if (applySpecialIndex) {

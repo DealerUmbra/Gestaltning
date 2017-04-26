@@ -83,15 +83,28 @@
     <Compile Include="Assets\Scripts\HexCoordinates.cs" />
     <Compile Include="Assets\Scripts\HexDirection.cs" />
     <Compile Include="Assets\Scripts\HexEdgeType.cs" />
+    <Compile Include="Assets\Scripts\HexFeatureCollection.cs" />
+    <Compile Include="Assets\Scripts\HexFeatureManager.cs" />
     <Compile Include="Assets\Scripts\HexGrid.cs" />
     <Compile Include="Assets\Scripts\HexGridChunk.cs" />
+    <Compile Include="Assets\Scripts\HexHash.cs" />
     <Compile Include="Assets\Scripts\HexMapCamera.cs" />
     <Compile Include="Assets\Scripts\HexMapEditor.cs" />
     <Compile Include="Assets\Scripts\HexMesh.cs" />
     <Compile Include="Assets\Scripts\HexMetrics.cs" />
+    <Compile Include="Assets\Scripts\ListPool.cs" />
+    <Compile Include="Assets\Scripts\UI\NewMapMenu.cs" />
+    <Compile Include="Assets\Scripts\UI\SaveLoadItem.cs" />
+    <Compile Include="Assets\Scripts\UI\SaveLoadMenu.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Materials\Estuary.shader" />
+    <None Include="Assets\Materials\River.shader" />
+    <None Include="Assets\Materials\Road.shader" />
     <None Include="Assets\Materials\VertexColors.shader" />
+    <None Include="Assets\Materials\Water Shore.shader" />
+    <None Include="Assets\Materials\Water.cginc" />
+    <None Include="Assets\Materials\Water.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>
