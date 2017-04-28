@@ -21,7 +21,7 @@ public class HexGrid : MonoBehaviour {
 
 	int chunkCountX, chunkCountZ;
     int randomThreshold = 25;
-    int[] waterHeights = { 0, 1, 1, 2, 2 };
+    int[] basicHeights = { 0, 0, 1, 1, 1, 2, 2 };
 
 	void Awake () {
 		HexMetrics.noiseSource = noiseSource;
@@ -144,7 +144,7 @@ public class HexGrid : MonoBehaviour {
 			new Vector2(position.x, position.z);
 		cell.uiRect = label.rectTransform;
 
-        cell.Elevation = waterHeights[Random.Range(0, waterHeights.Length)];
+        cell.Elevation = basicHeights[Random.Range(0, basicHeights.Length)];
         if(Random.Range(0f, 100f) <= randomThreshold) {
             cell.Elevation += Random.Range(1, 5);
         }
@@ -183,7 +183,7 @@ public class HexGrid : MonoBehaviour {
         List<HexCell> riverOrigins = new List<HexCell>();
         for(int i=0; i < cells.Length; i++)
         {
-            if (cells[i].IsUnderwater)
+            if (cells[i].IsUnderwater && (cells[i].Elevation > 0 || (cells[i].Elevation == 0 && i % 4 == 0)))
             {
                 riverOrigins.Add(cells[i]);
             }
@@ -212,6 +212,16 @@ public class HexGrid : MonoBehaviour {
             cell.SetOutgoingRiver(riverDirection);
             if(!cell.GetNeighbor(riverDirection).IsUnderwater)
             CreateRiver(cell.GetNeighbor(riverDirection), cell.GetNeighbor(riverDirection).Elevation) ;
+        }
+        else
+        {
+            if (cell.Elevation > 0)
+            {
+                cell.WaterLevel = cell.Elevation;
+                cell.Elevation--;
+            }
+            else
+                cell.WaterLevel = 1;
         }
     }
 
@@ -265,7 +275,6 @@ public class HexGrid : MonoBehaviour {
 		WaitForSeconds delay = new WaitForSeconds(1 / 60f);
 		List<HexCell> frontier = new List<HexCell>();
 		cell.Distance = 0;
-        HexCell previous;
 		frontier.Add(cell);
 		while (frontier.Count > 0) {
 			yield return delay;
@@ -283,10 +292,6 @@ public class HexGrid : MonoBehaviour {
 				if (edgeType == HexEdgeType.Cliff) {
 					continue;
 				}
-                if (neighbor.HasRiver && !(neighbor.HasRoadThroughEdge(d.Opposite()) && current.HasRoadThroughEdge(d)))
-                {
-                    continue;
-                }
 				int distance = current.Distance;
 				if (current.HasRoadThroughEdge(d)) {
 					distance += 1;
@@ -308,7 +313,6 @@ public class HexGrid : MonoBehaviour {
 				}
 				frontier.Sort((x, y) => x.Distance.CompareTo(y.Distance));
 			}
-            previous = current;
 		}
 	}
 }

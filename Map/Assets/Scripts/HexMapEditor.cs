@@ -8,17 +8,11 @@ public class HexMapEditor : MonoBehaviour {
 
 	public Material terrainMaterial;
 
-	int activeElevation;
-	int activeWaterLevel;
-
 	int activeUrbanLevel, activeFarmLevel, activePlantLevel, activeSpecialIndex;
 
 	int brushSize;
 
 	bool editMode;
-
-	bool applyElevation = true;
-	bool applyWaterLevel = true;
 
 	bool applyUrbanLevel, applyFarmLevel, applyPlantLevel, applySpecialIndex;
 
@@ -31,22 +25,6 @@ public class HexMapEditor : MonoBehaviour {
 	bool isDrag;
 	HexDirection dragDirection;
 	HexCell previousCell;
-
-	public void SetApplyElevation (bool toggle) {
-		applyElevation = toggle;
-	}
-
-	public void SetElevation (float elevation) {
-		activeElevation = (int)elevation;
-	}
-
-	public void SetApplyWaterLevel (bool toggle) {
-		applyWaterLevel = toggle;
-	}
-
-	public void SetWaterLevel (float level) {
-		activeWaterLevel = (int)level;
-	}
 
 	public void SetApplyUrbanLevel (bool toggle) {
 		applyUrbanLevel = toggle;
@@ -189,16 +167,6 @@ public class HexMapEditor : MonoBehaviour {
                 if (cell.GetNeighbor((HexDirection)i))
                 neighbors.Add(cell.GetNeighbor((HexDirection)i));
             }
-			if (applyElevation) {
-				cell.Elevation = activeElevation;
-			}
-			if (applyWaterLevel) {
-				cell.WaterLevel = activeWaterLevel;
-                foreach(HexCell c in neighbors)
-                {
-                    c.Irrigate();
-                }
-			}
 			if (applySpecialIndex) {
 				cell.SpecialIndex = activeSpecialIndex;
 			}
