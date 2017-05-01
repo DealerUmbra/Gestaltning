@@ -18,7 +18,12 @@ public class HexGrid : MonoBehaviour {
 
     public Transform popPrefab;
 
-	HexGridChunk[] chunks;
+    public enum Seasons
+    {
+        Spring, Summer, Fall, Winter
+    }
+
+    HexGridChunk[] chunks;
 	HexCell[] cells;
 
 	int chunkCountX, chunkCountZ;
@@ -59,7 +64,9 @@ public class HexGrid : MonoBehaviour {
 
         SetWindDirections();
         PlacePops();
-		return true;
+
+        InvokeRepeating("Tick", 0f, 1f);
+        return true;
 	}
 
 	void CreateChunks () {
@@ -264,6 +271,14 @@ public class HexGrid : MonoBehaviour {
             Population p = pop.GetComponent<Population>();
             p.Create(popCell, 50);
             p.UpdatePosition(popCell);
+        }
+    }
+
+    void Tick()
+    {
+        for(int i=0; i<chunks.Length;i++)
+        {
+            chunks[i].Tick();
         }
     }
 

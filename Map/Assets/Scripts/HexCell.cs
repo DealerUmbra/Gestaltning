@@ -11,6 +11,8 @@ public class HexCell : MonoBehaviour {
 
 	public HexGridChunk chunk;
 
+    
+
 	public int Elevation {
 		get {
 			return elevation;
@@ -40,6 +42,7 @@ public class HexCell : MonoBehaviour {
 		}
 	}
 
+
 	public int WaterLevel {
 		get {
 			return waterLevel;
@@ -60,6 +63,8 @@ public class HexCell : MonoBehaviour {
 			return waterLevel > elevation;
 		}
 	}
+
+
 
 	public bool HasIncomingRiver {
 		get {
@@ -334,7 +339,7 @@ public class HexCell : MonoBehaviour {
 	int terrainTypeIndex;
 
 	int elevation = int.MinValue;
-
+    Seasons season = Seasons.Spring;
 
     List<Population> cellPops = new List<Population>();
     int waterLevel;
@@ -343,6 +348,7 @@ public class HexCell : MonoBehaviour {
 
     int settlingUrban = 0;
     int settlingRural = 0;
+    int seasonPass = 0;
 
 	int urbanLevel, farmLevel, plantLevel;
 
@@ -452,7 +458,18 @@ public class HexCell : MonoBehaviour {
 
     public void Tick()
     {
-        if(CellPopulation > 0)
+        //Time passes
+        seasonPass++;
+        if (seasonPass >= 4)
+        {
+            if (Season < Seasons.Winter)
+                Season++;
+            else
+                Season = 0;
+            seasonPass = 0;
+        }
+        //If populated...
+        if (CellPopulation > 0)
         {
             if (CellPopulation < Sustainability * WorldMetrics.popRuralMultiplier)
             {
@@ -482,6 +499,7 @@ public class HexCell : MonoBehaviour {
         {
             //Do stuff?
         }
+
     }
 
 	public void SetOutgoingRiver (HexDirection direction) {
@@ -524,6 +542,7 @@ public class HexCell : MonoBehaviour {
 
     public void Irrigate()
     {
+        WaterCount = 0;
         foreach (HexCell c in neighbors)
         {
             if (c) {

@@ -51,8 +51,6 @@ public class Population : MonoBehaviour {
         {
             Count = (int)((1 - birthRate) * Count);
         }
-        
-        currentCell.Tick();
     }
 
     void CheckMostDesirableNeighbor()

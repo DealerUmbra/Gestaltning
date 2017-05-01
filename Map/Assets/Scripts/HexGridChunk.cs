@@ -77,6 +77,14 @@ public class HexGridChunk : MonoBehaviour {
         
     }
 
+    public void Tick()
+    {
+        for(int i=0; i < cells.Length; i++)
+        {
+            cells[i].Tick();
+        }
+    }
+
 	public void Triangulate () {
 		terrain.Clear();
 		rivers.Clear();
