@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using System.Collections.Generic;
 using System.IO;
 
 public class HexCell : MonoBehaviour {
@@ -118,6 +119,22 @@ public class HexCell : MonoBehaviour {
 			return transform.localPosition;
 		}
 	}
+
+    public int CellPopulation {
+    get {
+            int totalPop = 0;
+            for(int i=0; i < cellPops.Count; i++)
+            {
+                totalPop += cellPops[i].Count;
+            }
+            return totalPop;
+        }
+    }
+
+    public Population getRandomPop()
+    {
+        return cellPops[Random.Range(0, cellPops.Count)];
+    }
 
 
 	public float StreamBedY {
@@ -259,12 +276,73 @@ public class HexCell : MonoBehaviour {
 		}
 	}
 
+    public int Sustainability
+    {
+        get
+        {
+            int sus = 0;
+            if (IsUnderwater)
+                return 0;
+            for(int i=0; i<neighbors.Length; i++)
+            {
+                if (neighbors[i])
+                {
+                    if(GetEdgeType(neighbors[i]) != HexEdgeType.Slope && !neighbors[i].IsUnderwater)
+                    {
+                        sus++;
+                    }
+                }
+            }
+            sus += (int) (2 * plantLevel + farmLevel - 2 * urbanLevel);
+            return sus;
+        }
+    }
+
+    public int Security
+    {
+        get
+        {
+
+            if (IsUnderwater)
+                return 0;
+            int s = 0;
+            for(int i = 0; i<neighbors.Length; i++)
+            {
+                if (neighbors[i])
+                {
+                    HexCell n = neighbors[i];
+                    if (walled && n.walled)
+                        s++;
+                    if (n.elevation > elevation)
+                        s++;
+                    if (n.HasRiver && !HasRiver)
+                        s++;
+                }
+            }
+            return s;
+        }
+    }
+
+    public int Desirability
+    {
+        get
+        {
+            return Sustainability + Security - CellPopulation / 50;
+        }
+    }
+
 	int terrainTypeIndex;
 
 	int elevation = int.MinValue;
-	int waterLevel;
+
+
+    List<Population> cellPops = new List<Population>();
+    int waterLevel;
     int plantThreshold;
     float waterCount;
+
+    int settlingUrban = 0;
+    int settlingRural = 0;
 
 	int urbanLevel, farmLevel, plantLevel;
 
@@ -304,6 +382,29 @@ public class HexCell : MonoBehaviour {
 		);
 	}
 
+    public void Urbanize()
+    {
+            UrbanLevel++;
+            if (plantLevel == 0)
+                farmLevel--;
+            else
+                plantLevel--;
+        
+    }
+
+    public void BuildFarms()
+    {
+        FarmLevel++;
+        PlantLevel--;
+    }
+
+    public void Reclaim()
+    {
+        UrbanLevel--;
+        FarmLevel--;
+        PlantLevel++;
+    }
+
 	public bool HasRiverThroughEdge (HexDirection direction) {
 		return
 			hasIncomingRiver && incomingRiver == direction ||
@@ -338,6 +439,50 @@ public class HexCell : MonoBehaviour {
 		RemoveOutgoingRiver();
 		RemoveIncomingRiver();
 	}
+
+    public void AddPopulation(Population pop)
+    {
+        cellPops.Add(pop);
+    }
+
+    public void RemovePopulation(Population pop)
+    {
+        cellPops.Remove(pop);
+    }
+
+    public void Tick()
+    {
+        if(CellPopulation > 0)
+        {
+            if (CellPopulation < Sustainability * WorldMetrics.popRuralMultiplier)
+            {
+                settlingRural++;
+                if(settlingRural >= WorldMetrics.popStepsRequired)
+                {
+                    if(PlantLevel > 0)
+                    {
+                        BuildFarms();
+                    }
+                    settlingRural = 0;
+                }
+            }
+            if (CellPopulation < (Sustainability) * WorldMetrics.popUrbanMultiplier)
+            { settlingUrban++;
+            if(settlingUrban >= WorldMetrics.popStepsRequired)
+                {
+                    if(PlantLevel > 0 || FarmLevel > 0)
+                    {
+                        Urbanize();
+                    }
+                    settlingUrban = 0;
+                }
+            }
+        }
+        if(CellPopulation > (Sustainability) * (WorldMetrics.popUrbanMultiplier + WorldMetrics.popRuralMultiplier))
+        {
+            //Do stuff?
+        }
+    }
 
 	public void SetOutgoingRiver (HexDirection direction) {
 		if (hasOutgoingRiver && outgoingRiver == direction) {

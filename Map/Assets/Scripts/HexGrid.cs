@@ -16,6 +16,8 @@ public class HexGrid : MonoBehaviour {
 
 	public int seed;
 
+    public Transform popPrefab;
+
 	HexGridChunk[] chunks;
 	HexCell[] cells;
 
@@ -54,6 +56,9 @@ public class HexGrid : MonoBehaviour {
         CreateRivers();
 
         IrrigateGrid();
+
+        SetWindDirections();
+        PlacePops();
 		return true;
 	}
 
@@ -77,6 +82,15 @@ public class HexGrid : MonoBehaviour {
 			}
 		}
 	}
+
+    public Population PlacePop(HexCell startCell, int popCount)
+    {
+        Transform pop = (Transform)Instantiate(popPrefab);
+        Population p = pop.GetComponent<Population>();
+        p.Create(startCell, popCount);
+        p.UpdatePosition(startCell);
+        return p;
+    }
 
 	void OnEnable () {
 		if (!HexMetrics.noiseSource) {
@@ -230,6 +244,26 @@ public class HexGrid : MonoBehaviour {
         for (int i = 0; i < cells.Length; i++)
         {
             cells[i].Irrigate();
+        }
+    }
+
+    void SetWindDirections()
+    {
+        foreach(HexGridChunk chunk in chunks)
+        {
+            chunk.SetWindDirection();
+        }
+    }
+
+    public void PlacePops()
+    {
+        for(int i=0; i<chunks.Length; i++)
+        {
+            HexCell popCell = chunks[i].BestCell();
+            Transform pop = (Transform)Instantiate(popPrefab);
+            Population p = pop.GetComponent<Population>();
+            p.Create(popCell, 50);
+            p.UpdatePosition(popCell);
         }
     }
 

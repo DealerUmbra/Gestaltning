@@ -41,6 +41,42 @@ public class HexGridChunk : MonoBehaviour {
 		enabled = false;
 	}
 
+    public HexCell BestCell()
+    {
+        int cellIndex = 0;
+        int cellValue = 0;
+        for(int i = 0; i < cells.Length; i++)
+        {
+            int iValue = cells[i].Desirability;
+            if(iValue >= cellValue)
+            {
+                cellValue = iValue;
+                cellIndex = i;
+            }
+        }
+        return cells[cellIndex];
+    }
+
+    public void SetWindDirection()
+    {
+        GameObject windZone = GetComponentInChildren<WindZone>().gameObject;
+        windZone.transform.position = transform.GetChild(22).position;
+        Quaternion windRotation = Quaternion.identity;
+        Vector3 baseV = Vector3.zero;
+        for(int i=0; i < cells.Length; i++)
+        {
+            HexCell cell = cells[i];
+            if (cell.IsUnderwater || cell.Elevation > 4)
+            {
+                Vector3 direction = cell.Position - windZone.transform.position;
+                direction.Normalize();
+                baseV += direction;
+            }
+        }
+        windZone.transform.LookAt(transform.position + baseV);
+        
+    }
+
 	public void Triangulate () {
 		terrain.Clear();
 		rivers.Clear();
