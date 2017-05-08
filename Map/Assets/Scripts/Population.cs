@@ -4,11 +4,17 @@ using UnityEngine;
 
 public class Population : MonoBehaviour {
 
+    [SerializeField]
     int count;
 
-    public Material[] materials;
+    float[] desirabilityFactors; //Sustainability | Security
 
-    bool migratory = false;
+    public float[] DesirabilityFactors
+    {
+        get { return desirabilityFactors; }
+    }
+
+    public Material[] materials;
 
     public int Count
     {
@@ -17,13 +23,23 @@ public class Population : MonoBehaviour {
     }
     HexCell currentCell;
     float birthRate = 0.02f;
+    float mortalityRate = 0.01f;
 
     // Use this for initialization
-    public void Create(HexCell startCell, int pop)
+    public void Create(int pop)
     {
+        desirabilityFactors = new float[2];
+        desirabilityFactors[0] = Mathf.Round(Random.Range(0f, 1f) * 100f) / 100f;
+
+        desirabilityFactors[1] = Mathf.Round(Random.Range(0f, 1f) * 100f) / 100f;
         Count = pop;
+    }
+
+    public void PlacePop(HexCell startCell)
+    {
+        transform.position = startCell.Position + new Vector3(0, 5, 0);
+        startCell.AddPopulation(this);
         currentCell = startCell;
-        currentCell.AddPopulation(this);
     }
 
     public void UpdatePosition(HexCell cell)
@@ -34,7 +50,7 @@ public class Population : MonoBehaviour {
         currentCell = cell;
     }
     void Start () {
-        InvokeRepeating("Tick", 0f, 1f);
+
 	}
 	
 	// Update is called once per frame
@@ -42,15 +58,10 @@ public class Population : MonoBehaviour {
 		
 	}
 
-    void Tick()
+    public void Tick()
     {
-        if (!migratory) {
             Count += (int)(birthRate * Count + currentCell.Sustainability);
-        }
-        else
-        {
-            Count = (int)((1 - birthRate) * Count);
-        }
+        Count -= (int)(mortalityRate * Count);
     }
 
     void CheckMostDesirableNeighbor()
@@ -63,9 +74,9 @@ public class Population : MonoBehaviour {
             {
                 if(currentCell.GetEdgeType(i) != HexEdgeType.Slope) {
                     HexCell dCell = currentCell.GetNeighbor(i);
-                    if (dCell.Desirability > dValue)
+                    if (dCell.Desirability(desirabilityFactors) > dValue)
                     {
-                        dValue = dCell.Desirability;
+                        dValue = dCell.Desirability(desirabilityFactors);
                         d = i;
                     }
                 }

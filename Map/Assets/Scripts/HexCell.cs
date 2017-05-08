@@ -11,7 +11,28 @@ public class HexCell : MonoBehaviour {
 
 	public HexGridChunk chunk;
 
-    
+    public Season Season {
+        set
+        {
+            if(Elevation <= 2) {
+                switch (value)
+                {
+                    case Season.Spring:
+                        if (WaterCount > 0) TerrainTypeIndex = 1; else TerrainTypeIndex = 0;
+                        break;
+                    case Season.Summer:
+                        if (WaterCount > 0) TerrainTypeIndex = 1; else TerrainTypeIndex = 0;
+                        break;
+                    case Season.Fall:
+                        TerrainTypeIndex = 3;
+                        break;
+                    case Season.Winter:
+                        TerrainTypeIndex = 4;
+                        break;
+                }
+            }
+        }
+    }
 
 	public int Elevation {
 		get {
@@ -299,6 +320,7 @@ public class HexCell : MonoBehaviour {
                 }
             }
             sus += (int) (2 * plantLevel + farmLevel - 2 * urbanLevel);
+            sus -= CellPopulation / 50;
             return sus;
         }
     }
@@ -328,18 +350,22 @@ public class HexCell : MonoBehaviour {
         }
     }
 
-    public int Desirability
+    public int RawDesirability
     {
         get
         {
-            return Sustainability + Security - CellPopulation / 50;
+            return Sustainability + Security;
         }
+    }
+
+    public int Desirability(float[] desirabilityFactors)
+    {
+        return (int) (desirabilityFactors[0] * Sustainability + desirabilityFactors[1] * Security);
     }
 
 	int terrainTypeIndex;
 
 	int elevation = int.MinValue;
-    Seasons season = Seasons.Spring;
 
     List<Population> cellPops = new List<Population>();
     int waterLevel;
@@ -348,7 +374,6 @@ public class HexCell : MonoBehaviour {
 
     int settlingUrban = 0;
     int settlingRural = 0;
-    int seasonPass = 0;
 
 	int urbanLevel, farmLevel, plantLevel;
 
@@ -458,19 +483,13 @@ public class HexCell : MonoBehaviour {
 
     public void Tick()
     {
-        //Time passes
-        seasonPass++;
-        if (seasonPass >= 4)
-        {
-            if (Season < Seasons.Winter)
-                Season++;
-            else
-                Season = 0;
-            seasonPass = 0;
-        }
         //If populated...
         if (CellPopulation > 0)
         {
+            for(int i=0; i < cellPops.Count; i++)
+            {
+                cellPops[i].Tick();
+            }
             if (CellPopulation < Sustainability * WorldMetrics.popRuralMultiplier)
             {
                 settlingRural++;

@@ -18,9 +18,12 @@ public class HexGrid : MonoBehaviour {
 
     public Transform popPrefab;
 
-    public enum Seasons
+    Season season = Season.Spring;
+    int seasonProgress = 0;
+
+    public Season Season
     {
-        Spring, Summer, Fall, Winter
+        get { return season; }
     }
 
     HexGridChunk[] chunks;
@@ -65,7 +68,8 @@ public class HexGrid : MonoBehaviour {
         SetWindDirections();
         PlacePops();
 
-        InvokeRepeating("Tick", 0f, 1f);
+        StartTicking();
+        //InvokeRepeating("Tick", 0f, 1f);
         return true;
 	}
 
@@ -89,15 +93,6 @@ public class HexGrid : MonoBehaviour {
 			}
 		}
 	}
-
-    public Population PlacePop(HexCell startCell, int popCount)
-    {
-        Transform pop = (Transform)Instantiate(popPrefab);
-        Population p = pop.GetComponent<Population>();
-        p.Create(startCell, popCount);
-        p.UpdatePosition(startCell);
-        return p;
-    }
 
 	void OnEnable () {
 		if (!HexMetrics.noiseSource) {
@@ -266,23 +261,49 @@ public class HexGrid : MonoBehaviour {
     {
         for(int i=0; i<chunks.Length; i++)
         {
-            HexCell popCell = chunks[i].BestCell();
             Transform pop = (Transform)Instantiate(popPrefab);
             Population p = pop.GetComponent<Population>();
-            p.Create(popCell, 50);
-            p.UpdatePosition(popCell);
+
+            p.Create(50);
+            HexCell popCell = chunks[i].BestCell(p.DesirabilityFactors);
+            p.PlacePop(popCell);
+        }
+    }
+
+    void StartTicking()
+    {
+        InvokeRepeating("UpdateSeason", 0f, 1f);
+        for(int i=0; i<chunks.Length; i++)
+        {
+            chunks[i].InvokeRepeating("Tick", i / 1000, 1f);
         }
     }
 
     void Tick()
     {
+        UpdateSeason();
         for(int i=0; i<chunks.Length;i++)
         {
+            chunks[i].Season = season;
             chunks[i].Tick();
         }
     }
 
-	public void Save (BinaryWriter writer) {
+    private void UpdateSeason()
+    {
+        seasonProgress++;
+        if(seasonProgress > 4)
+        {
+            season = Season.Next();
+            seasonProgress = 0;
+            for(int i=0; i<chunks.Length; i++)
+            {
+                chunks[i].Season = season;
+            }
+        }
+    }
+
+    public void Save (BinaryWriter writer) {
 		writer.Write(cellCountX);
 		writer.Write(cellCountZ);
 

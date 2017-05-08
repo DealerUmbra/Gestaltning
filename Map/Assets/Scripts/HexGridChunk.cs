@@ -41,13 +41,25 @@ public class HexGridChunk : MonoBehaviour {
 		enabled = false;
 	}
 
-    public HexCell BestCell()
+    public Season Season
+    {
+        set
+        {
+            for(int i=0; i<cells.Length; i++)
+            {
+                cells[i].Season = value;
+            }
+            Refresh();
+        }
+    }
+
+    public HexCell BestCell(float[] desirabilityFactors)
     {
         int cellIndex = 0;
         int cellValue = 0;
         for(int i = 0; i < cells.Length; i++)
         {
-            int iValue = cells[i].Desirability;
+            int iValue = cells[i].Desirability(desirabilityFactors);
             if(iValue >= cellValue)
             {
                 cellValue = iValue;
