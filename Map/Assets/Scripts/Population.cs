@@ -5,9 +5,68 @@ using UnityEngine;
 public class Population : MonoBehaviour {
 
     [SerializeField]
-    int count;
+    int count = 0;
+    
+    float birthRate = 0.02f;
+    float mortalityRate = 0.01f;
+
+    HexCell currentCell;
+
+    public Transform popPrefab;
+    Transform pTracker;
+
+    HexCell CurrentCell
+    {
+        get
+        {
+            return currentCell;
+        }
+        set
+        {
+            currentCell = value;
+        }
+    }
 
     float[] desirabilityFactors; //Sustainability | Security
+
+    public float dFactor(int i)
+    {
+        return desirabilityFactors[i];
+    }
+
+    List<Population> subPopulations = new List<Population>();
+
+    public Population() {
+        subPopulations = new List<Population>();
+    }
+
+    void Awake()
+    {
+        desirabilityFactors = GenerateFactors();
+    }
+
+    void Start() {
+        subPopulations = new List<Population>();
+        currentCell = GetComponent<HexCell>();
+        pTracker = Instantiate(popPrefab, transform.position + new Vector3(0, 5, 0), Quaternion.identity);
+        pTracker.parent = this.transform;
+        pTracker.gameObject.SetActive(false);
+    }
+
+    public Population(float[] dFactors, int pop)
+    {
+        subPopulations = new List<Population>();
+        desirabilityFactors = dFactors;
+        count = pop;
+    }
+
+    public void Create(float[] dFactors, int pop, HexCell startCell, Transform pPrefab)
+    {
+        subPopulations = new List<Population>();
+        desirabilityFactors = dFactors;
+        this.popPrefab = pPrefab;
+        Count = pop;
+    }
 
     public float[] DesirabilityFactors
     {
@@ -18,40 +77,63 @@ public class Population : MonoBehaviour {
 
     public int Count
     {
-        get { return count; }
-        set { count = value; transform.localScale = Vector3.one * (count / 450f + 8f / 9f); }
+        get {
+            if(subPopulations.Count == 0)
+            {
+                return count;
+            }
+            else
+            {
+                int totalCount = 0;
+                for (int i = 0; i < subPopulations.Count; i++)
+                {
+                    totalCount += subPopulations[i].Count;
+                }
+                return count + totalCount;
+            }
+            
+        }
+        set {count = value;
+            pTracker.localScale = Vector3.one * (count / 450f + 8f / 9f); }
     }
-    HexCell currentCell;
-    float birthRate = 0.02f;
-    float mortalityRate = 0.01f;
 
     // Use this for initialization
-    public void Create(int pop)
+    public void Create(float[] dFactors, int pop)
     {
-        desirabilityFactors = new float[2];
-        desirabilityFactors[0] = Mathf.Round(Random.Range(0f, 1f) * 100f) / 100f;
-
-        desirabilityFactors[1] = Mathf.Round(Random.Range(0f, 1f) * 100f) / 100f;
-        Count = pop;
+        desirabilityFactors = dFactors;
+        count = pop;
     }
 
-    public void PlacePop(HexCell startCell)
+    public static float[] GenerateFactors()
     {
-        transform.position = startCell.Position + new Vector3(0, 5, 0);
-        startCell.AddPopulation(this);
-        currentCell = startCell;
+        float[] dFactors = new float[2];
+        dFactors[0] = Mathf.Round(Random.Range(0f, 1f) * 100f) / 100f;
+        dFactors[1] = Mathf.Round(Random.Range(0f, 1f) * 100f) / 100f;
+        return dFactors;
+    }
+
+    public void AddPopulation(Population pop)
+    {
+        subPopulations.Add(pop);
+    }
+
+    public void RemovePopulation(Population pop)
+    {
+        subPopulations.Remove(pop);
+    }
+
+    void CreateSubgroup(Population population)
+    {
+        Population newPop = new Population(desirabilityFactors, 50);
+        population.Count -= 50;
+        AddPopulation(newPop);
     }
 
     public void UpdatePosition(HexCell cell)
     {
         transform.position = cell.Position + new Vector3(0, 5, 0);
-        cell.AddPopulation(this);
-        currentCell.RemovePopulation(this);
-        currentCell = cell;
+        cell.CellPopulation.AddPopulation(this);
     }
-    void Start () {
-
-	}
 	
 	// Update is called once per frame
 	void Update () {
@@ -60,8 +142,20 @@ public class Population : MonoBehaviour {
 
     public void Tick()
     {
-            Count += (int)(birthRate * Count + currentCell.Sustainability);
+        if(Count > 0)
+        {
+            pTracker.gameObject.SetActive(true);
+        }
+        else { pTracker.gameObject.SetActive(false); }
+
+        Count += (int)(birthRate * Count + GetComponent<HexCell>().Sustainability);
         Count -= (int)(mortalityRate * Count);
+
+        for (int i = 0; i < subPopulations.Count; i++)
+        {
+            subPopulations[i].Count += (int)(birthRate * Count + GetComponent<HexCell>().Sustainability);
+            subPopulations[i].Count -= (int)(mortalityRate * Count);
+        }
     }
 
     void CheckMostDesirableNeighbor()

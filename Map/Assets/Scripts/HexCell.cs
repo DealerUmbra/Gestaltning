@@ -146,22 +146,11 @@ public class HexCell : MonoBehaviour {
 		}
 	}
 
-    public int CellPopulation {
+    public Population CellPopulation {
     get {
-            int totalPop = 0;
-            for(int i=0; i < cellPops.Count; i++)
-            {
-                totalPop += cellPops[i].Count;
-            }
-            return totalPop;
+            return GetComponent<Population>();
         }
     }
-
-    public Population getRandomPop()
-    {
-        return cellPops[Random.Range(0, cellPops.Count)];
-    }
-
 
 	public float StreamBedY {
 		get {
@@ -320,7 +309,8 @@ public class HexCell : MonoBehaviour {
                 }
             }
             sus += (int) (2 * plantLevel + farmLevel - 2 * urbanLevel);
-            sus -= CellPopulation / 50;
+            if(CellPopulation.Count > 0)
+            sus -= CellPopulation.Count / 50;
             return sus;
         }
     }
@@ -366,8 +356,7 @@ public class HexCell : MonoBehaviour {
 	int terrainTypeIndex;
 
 	int elevation = int.MinValue;
-
-    List<Population> cellPops = new List<Population>();
+    
     int waterLevel;
     int plantThreshold;
     float waterCount;
@@ -416,6 +405,10 @@ public class HexCell : MonoBehaviour {
     public void Urbanize()
     {
             UrbanLevel++;
+        if(CellPopulation.dFactor(1) > 0.5 && !Walled)
+        {
+            Walled = true;
+        }
             if (plantLevel == 0)
                 farmLevel--;
             else
@@ -471,26 +464,13 @@ public class HexCell : MonoBehaviour {
 		RemoveIncomingRiver();
 	}
 
-    public void AddPopulation(Population pop)
-    {
-        cellPops.Add(pop);
-    }
-
-    public void RemovePopulation(Population pop)
-    {
-        cellPops.Remove(pop);
-    }
-
     public void Tick()
     {
         //If populated...
-        if (CellPopulation > 0)
+        if (CellPopulation.Count > 0)
         {
-            for(int i=0; i < cellPops.Count; i++)
-            {
-                cellPops[i].Tick();
-            }
-            if (CellPopulation < Sustainability * WorldMetrics.popRuralMultiplier)
+            CellPopulation.Tick();
+            if (CellPopulation.Count < Sustainability * WorldMetrics.popRuralMultiplier)
             {
                 settlingRural++;
                 if(settlingRural >= WorldMetrics.popStepsRequired)
@@ -502,7 +482,7 @@ public class HexCell : MonoBehaviour {
                     settlingRural = 0;
                 }
             }
-            if (CellPopulation < (Sustainability) * WorldMetrics.popUrbanMultiplier)
+            if (CellPopulation.Count < (Sustainability) * WorldMetrics.popUrbanMultiplier)
             { settlingUrban++;
             if(settlingUrban >= WorldMetrics.popStepsRequired)
                 {
@@ -514,7 +494,7 @@ public class HexCell : MonoBehaviour {
                 }
             }
         }
-        if(CellPopulation > (Sustainability) * (WorldMetrics.popUrbanMultiplier + WorldMetrics.popRuralMultiplier))
+        if(CellPopulation.Count > (Sustainability) * (WorldMetrics.popUrbanMultiplier + WorldMetrics.popRuralMultiplier))
         {
             //Do stuff?
         }

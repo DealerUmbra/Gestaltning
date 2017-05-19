@@ -11,12 +11,11 @@ public class HexGrid : MonoBehaviour {
 	public HexCell cellPrefab;
 	public Text cellLabelPrefab;
 	public HexGridChunk chunkPrefab;
+    public Transform popPrefab;
 
 	public Texture2D noiseSource;
 
 	public int seed;
-
-    public Transform popPrefab;
 
     Season season = Season.Spring;
     int seasonProgress = 0;
@@ -64,8 +63,7 @@ public class HexGrid : MonoBehaviour {
         CreateRivers();
 
         IrrigateGrid();
-
-        SetWindDirections();
+        
         PlacePops();
 
         StartTicking();
@@ -249,24 +247,13 @@ public class HexGrid : MonoBehaviour {
         }
     }
 
-    void SetWindDirections()
-    {
-        foreach(HexGridChunk chunk in chunks)
-        {
-            chunk.SetWindDirection();
-        }
-    }
-
     public void PlacePops()
     {
         for(int i=0; i<chunks.Length; i++)
         {
-            Transform pop = (Transform)Instantiate(popPrefab);
-            Population p = pop.GetComponent<Population>();
-
-            p.Create(50);
-            HexCell popCell = chunks[i].BestCell(p.DesirabilityFactors);
-            p.PlacePop(popCell);
+            float[] dFactors = Population.GenerateFactors();
+            HexCell popCell = chunks[i].BestCell(dFactors);
+            popCell.CellPopulation.Create(dFactors, 50);
         }
     }
 
