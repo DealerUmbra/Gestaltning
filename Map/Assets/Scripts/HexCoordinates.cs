@@ -41,23 +41,23 @@ public struct HexCoordinates {
 	}
 
 	public static HexCoordinates FromPosition (Vector3 position) {
-		float x = position.x / (HexMetrics.innerRadius * 2f);
+        float x = position.x / (HexMetrics.innerRadius * 2f);
 		float y = -x;
 
 		float offset = position.z / (HexMetrics.outerRadius * 3f);
 		x -= offset;
 		y -= offset;
 
-		int iX = Mathf.RoundToInt(x);
-		int iY = Mathf.RoundToInt(y);
-		int iZ = Mathf.RoundToInt(-x -y);
+		int iX = Mathf.FloorToInt(x);
+		int iY = Mathf.FloorToInt(y);
+		int iZ = Mathf.CeilToInt(-x -y);
 
 		if (iX + iY + iZ != 0) {
 			float dX = Mathf.Abs(x - iX);
 			float dY = Mathf.Abs(y - iY);
 			float dZ = Mathf.Abs(-x -y - iZ);
 
-			if (dX > dY && dX > dZ) {
+            if (dX > dY && dX > dZ) {
 				iX = -iY - iZ;
 			}
 			else if (dZ > dY) {

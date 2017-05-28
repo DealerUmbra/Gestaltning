@@ -3,34 +3,41 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class SeasonChange : MonoBehaviour {
+    
+    HexCell hexCell;
 
-    HexGrid hexGrid;
-
-    Season season = Season.Spring;
+    public Season season = Season.Spring;
+    MeshRenderer mr;
     SeasonMaterialStorage smStorage;
     public int configLength;
-    public int[] configs;
-    public int[] childConfigUse;
-    public int[] seasonConfigUse;
+    public int[] materialIndices;
+    public int[] seasonConfigs;
 
     void Start()
     {
-        hexGrid = GameObject.Find("Hex Grid").GetComponent<HexGrid>();
         smStorage = GameObject.Find("Hex Grid").GetComponent<SeasonMaterialStorage>();
+        mr = GetComponent<MeshRenderer>();
     }
-    
+
+    public HexCell HexCell
+    {
+        set
+        {
+            hexCell = value;
+        }
+    }
+
 	
 	// Update is called once per frame
 	void Update () {
-		if(season != hexGrid.Season)
+		if(season != hexCell.Season)
         {
-            season = hexGrid.Season;
-            for (int i=0; i<transform.childCount; i++)
-            {
-                if (transform.GetChild(i).GetComponent<MeshRenderer>().material != smStorage.getMaterial(configs[childConfigUse[i] * configLength + seasonConfigUse[(int)season]]))
-                transform.GetChild(i).GetComponent<MeshRenderer>().material = smStorage.getMaterial(configs[childConfigUse[i] * configLength + seasonConfigUse[(int) season]]);
-
+            season = hexCell.Season;
+            Material[] temp = mr.materials;
+            for(int i = 0; i < mr.materials.Length; i++) {
+                temp[i] = smStorage.getMaterial(materialIndices[seasonConfigs[(int)season] * configLength + i]);
             }
+            mr.materials = temp;
         }
-	}
+    }
 }

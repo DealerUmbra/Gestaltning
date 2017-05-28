@@ -160,7 +160,6 @@ public class Population : MonoBehaviour {
 
     void CheckMostDesirableNeighbor()
     {
-        HexDirection d = HexDirection.NE;
         int dValue = 0;
         for (HexDirection i = HexDirection.NE; i <= HexDirection.NW; i++)
         {
@@ -171,7 +170,6 @@ public class Population : MonoBehaviour {
                     if (dCell.Desirability(desirabilityFactors) > dValue)
                     {
                         dValue = dCell.Desirability(desirabilityFactors);
-                        d = i;
                     }
                 }
                 

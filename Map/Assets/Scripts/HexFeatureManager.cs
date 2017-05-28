@@ -55,10 +55,6 @@ public class HexFeatureManager : MonoBehaviour {
 	}
 
 	public void AddFeature (HexCell cell, Vector3 position) {
-		if (cell.IsSpecial) {
-			return;
-		}
-
 		HexHash hash = HexMetrics.SampleHashGrid(position);
 		Transform prefab = PickPrefab(
 			urbanCollections, cell.UrbanLevel, hash.a, hash.d
@@ -96,14 +92,13 @@ public class HexFeatureManager : MonoBehaviour {
 		position.y += instance.localScale.y * 0.5f;
 		instance.localPosition = HexMetrics.Perturb(position);
 		instance.localRotation = Quaternion.Euler(0f, 360f * hash.e, 0f);
-		instance.SetParent(container, false);
-	}
 
-	public void AddSpecialFeature (HexCell cell, Vector3 position) {
-		HexHash hash = HexMetrics.SampleHashGrid(position);
-		Transform instance = Instantiate(special[cell.SpecialIndex - 1]);
-		instance.localPosition = HexMetrics.Perturb(position);
-		instance.localRotation = Quaternion.Euler(0f, 360f * hash.e, 0f);
+        for (int i = 0; i<instance.childCount; i++) {
+            if(instance.GetChild(i).GetComponent<SeasonChange>())
+            instance.GetChild(i).GetComponent<SeasonChange>().HexCell = cell;
+        }
+        
+            
 		instance.SetParent(container, false);
 	}
 

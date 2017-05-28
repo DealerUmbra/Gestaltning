@@ -100,10 +100,10 @@ public class HexGrid : MonoBehaviour {
 	}
 
 	public HexCell GetCell (Vector3 position) {
-		position = transform.InverseTransformPoint(position);
+        position = transform.InverseTransformPoint(position);
 		HexCoordinates coordinates = HexCoordinates.FromPosition(position);
-		int index =
-			coordinates.X + coordinates.Z * cellCountX + coordinates.Z / 2;
+		int index = coordinates.X + coordinates.Z * cellCountX + coordinates.Z / 2;
+        //print("Pos: " + position + " Coords: " + coordinates + " Index: " + index);
 		return cells[index];
 	}
 
@@ -204,7 +204,7 @@ public class HexGrid : MonoBehaviour {
         }
         for(int i=0; i < riverOrigins.Count; i++)
         {
-            CreateRiver(riverOrigins[i], riverOrigins[i].WaterLevel);
+            riverOrigins[i].CreateRiver();
         }
     }
 
@@ -229,13 +229,7 @@ public class HexGrid : MonoBehaviour {
         }
         else
         {
-            if (cell.Elevation > 0)
-            {
-                cell.WaterLevel = cell.Elevation;
-                cell.Elevation--;
-            }
-            else
-                cell.WaterLevel = 1;
+            cell.Sink();
         }
     }
 

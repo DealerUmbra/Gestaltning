@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
@@ -14,23 +15,37 @@ public class HexCell : MonoBehaviour {
     public Season Season {
         set
         {
-            if(Elevation <= 2) {
-                switch (value)
+            if (walled)
+            {
+                season = Season.Winter;
+                TerrainTypeIndex = 4;
+            }
+            else {
+                season = value;
+                if (Elevation <= 2)
                 {
-                    case Season.Spring:
-                        if (WaterCount > 0) TerrainTypeIndex = 1; else TerrainTypeIndex = 0;
-                        break;
-                    case Season.Summer:
-                        if (WaterCount > 0) TerrainTypeIndex = 1; else TerrainTypeIndex = 0;
-                        break;
-                    case Season.Fall:
-                        TerrainTypeIndex = 3;
-                        break;
-                    case Season.Winter:
-                        TerrainTypeIndex = 4;
-                        break;
+                    switch (value)
+                    {
+                        case Season.Spring:
+                            if (WaterCount > 0) TerrainTypeIndex = 1; else TerrainTypeIndex = 0;
+                            break;
+                        case Season.Summer:
+                            if (WaterCount > 0) TerrainTypeIndex = 1; else TerrainTypeIndex = 0;
+                            break;
+                        case Season.Fall:
+                            if (WaterCount > 0) TerrainTypeIndex = 3; else TerrainTypeIndex = 0;
+                            break;
+                        case Season.Winter:
+                            TerrainTypeIndex = 4;
+                            break;
+                    }
                 }
             }
+            
+        }
+        get
+        {
+            return season;
         }
     }
 
@@ -202,8 +217,15 @@ public class HexCell : MonoBehaviour {
 
     public float WaterCount
     {
-        get { return waterCount; }
+        get {
+            return waterCount;
+
+        }
         set { waterCount = value;
+            if(waterCount >= 10)
+            {
+                waterCount = 10;
+            }
             if ((waterCount > 0 || HasRiver) && Elevation <= 2)
             {
                 terrainTypeIndex = 1;
@@ -213,6 +235,7 @@ public class HexCell : MonoBehaviour {
                 terrainTypeIndex = 0;
             }
             if (terrainTypeIndex == 1)
+                RefreshSelfOnly();
                 PlantLevel = Mathf.Min((int)waterCount, PlantThreshold);
         }
     }
@@ -226,25 +249,6 @@ public class HexCell : MonoBehaviour {
 				plantLevel = value;
 				RefreshSelfOnly();
 			}
-		}
-	}
-
-	public int SpecialIndex {
-		get {
-			return specialIndex;
-		}
-		set {
-			if (specialIndex != value && !HasRiver) {
-				specialIndex = value;
-				RemoveRoads();
-				RefreshSelfOnly();
-			}
-		}
-	}
-
-	public bool IsSpecial {
-		get {
-			return specialIndex > 0;
 		}
 	}
 
@@ -309,6 +313,10 @@ public class HexCell : MonoBehaviour {
                 }
             }
             sus += (int) (2 * plantLevel + farmLevel - 2 * urbanLevel);
+            if(Season == Season.Winter)
+            {
+                sus -= 5;
+            }
             if(CellPopulation.Count > 0)
             sus -= CellPopulation.Count / 50;
             return sus;
@@ -360,9 +368,11 @@ public class HexCell : MonoBehaviour {
     int waterLevel;
     int plantThreshold;
     float waterCount;
+    Season season;
 
     int settlingUrban = 0;
     int settlingRural = 0;
+    int maxDepth = 3;
 
 	int urbanLevel, farmLevel, plantLevel;
 
@@ -542,30 +552,27 @@ public class HexCell : MonoBehaviour {
     public void Irrigate()
     {
         WaterCount = 0;
-        foreach (HexCell c in neighbors)
+
+        for(HexDirection i = HexDirection.NE; i < HexDirection.NW; i++)
         {
-            if (c) {
+            if (GetNeighbor(i))
+            {
+                HexCell c = GetNeighbor(i);
                 if (c.IsUnderwater)
                 {
-                        WaterCount++;
+                    WaterCount++;
                 }
-                else if (Mathf.Abs(c.Elevation - Elevation) < 2)
+                else if (GetEdgeType(i) != HexEdgeType.Cliff && c.HasRiver)
                 {
-                    if (c.WaterLevel > c.Elevation)
-                        WaterCount++;
-                    if (c.HasRiver)
-                        WaterCount += 0.5f;
+                    WaterCount += 0.5f;
                 }
-
             }
-            
         }
     }
 
 	public void AddRoad (HexDirection direction) {
 		if (
 			!roads[(int)direction] && !HasRiverThroughEdge(direction) &&
-			!IsSpecial && !GetNeighbor(direction).IsSpecial &&
 			GetElevationDifference(direction) <= 1
 		) {
 			SetRoad((int)direction, true);
@@ -612,6 +619,125 @@ public class HexCell : MonoBehaviour {
 		neighbors[index].RefreshSelfOnly();
 		RefreshSelfOnly();
 	}
+
+    public void CreateRiver()
+    {
+        List<HexDirection> candidateDirections = new List<HexDirection>();
+        for (HexDirection i = HexDirection.NE; i < HexDirection.NW; i++)
+        {
+            if (GetNeighbor(i))
+            {
+                HexCell candidate = GetNeighbor(i);
+                if (candidate.Elevation <= WaterLevel && !candidate.HasRiver && !candidate.IsUnderwater)
+                    candidateDirections.Add(i);
+            }
+
+        }
+        if (candidateDirections.Count > 0)
+        {
+            HexDirection riverDirection = candidateDirections[Random.Range(0, candidateDirections.Count)];
+            SetOutgoingRiver(riverDirection);
+            if (!GetNeighbor(riverDirection).IsUnderwater)
+                GetNeighbor(riverDirection).CreateRiver();
+        }
+        else
+        {
+            Sink();
+        }
+    }
+
+    public void Sink()
+    {
+        if (Elevation > 0)
+        {
+            WaterLevel = Elevation;
+            Elevation--;
+        }
+        else
+            WaterLevel = 1;
+    }
+
+    public void Seed()
+    {
+        if (UrbanLevel > 0)
+            Reclaim();
+        WaterCount += 5;
+
+        List<HexCell> seededCells = FindInfluenceList(this, 0);   
+        for(int t = 0; t <seededCells.Count; t++)
+        {
+            StartCoroutine("SeedCells", seededCells);
+        }
+        
+    }
+
+    private IEnumerator SeedCells(List<HexCell> seededCells)
+    {
+        for(int i=0; i<seededCells.Count; i++)
+        {
+            HexCell cell = seededCells[i];
+            if (cell.UrbanLevel > 0)
+                cell.Reclaim();
+                cell.WaterCount += 5;
+            yield return new WaitForSeconds(0.5f);
+        }
+        
+    }
+
+    public void Flame()
+    {
+        WaterCount -= 5;
+        WaterLevel = 0;
+        RemoveRiver();
+
+        List<HexCell> flamedCells = FindInfluenceList(this, 0);
+        foreach (HexCell hexCell in flamedCells)
+        {
+            StartCoroutine("FlameCell", hexCell);
+        }
+    }
+
+    IEnumerator FlameCell(HexCell cell)
+    {
+        yield return new WaitForSeconds(1.0f);
+        cell.WaterCount -= 5;
+        cell.WaterLevel = 0;
+        cell.RemoveRiver();
+    }
+
+    List<HexCell> FindInfluenceList(HexCell startCell, int depth)
+    {
+        List<HexCell> returnCells = new List<HexCell>();
+        List<HexCell> outerLayer = new List<HexCell>();
+        for(HexDirection i = HexDirection.NE; i < HexDirection.NW; i++)
+        {
+            if (startCell.GetNeighbor(i)) {
+                HexCell h = startCell.GetNeighbor(i);
+                if(startCell.GetEdgeType(h) != HexEdgeType.Cliff && !h.HasRiver && !returnCells.Contains(h) && h.Walled == startCell.Walled){
+                    returnCells.Add(h);
+                    outerLayer.Add(h);
+                }
+            }
+        }
+
+        depth++;
+        if(depth < maxDepth)
+        {
+            for (int i = 0; i < outerLayer.Count; i++)
+            {
+                List<HexCell> outerList = FindInfluenceList(outerLayer[i], depth);
+                for(int j=0; j<outerList.Count; j++)
+                {
+                    if (!returnCells.Contains(outerList[j]))
+                    {
+                        returnCells.Add(outerList[j]);
+                    }
+                }
+            }
+        }
+
+        return returnCells;
+    }
 
 	void RefreshPosition () {
 		Vector3 position = transform.localPosition;

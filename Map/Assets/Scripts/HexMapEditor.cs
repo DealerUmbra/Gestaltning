@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 using System.IO;
 using System.Collections.Generic;
 public class HexMapEditor : MonoBehaviour {
@@ -8,85 +9,65 @@ public class HexMapEditor : MonoBehaviour {
 
 	public Material terrainMaterial;
 
-	int activeUrbanLevel, activeFarmLevel, activePlantLevel, activeSpecialIndex;
+    public Texture2D createCursor;
+    public Texture2D destroyCursor;
 
 	int brushSize;
 
-	bool editMode;
+
+	bool editMode = false;
+
+    bool isCreate = false;
 
 	bool applyUrbanLevel, applyFarmLevel, applyPlantLevel, applySpecialIndex;
 
-	enum OptionalToggle {
-		Ignore, Yes, No
+	public enum UseModes {
+		Watch, Create, Destroy
 	}
+    UseModes useMode = UseModes.Watch;
 
-	OptionalToggle riverMode, roadMode, walledMode;
-
-	bool isDrag;
-	HexDirection dragDirection;
-	HexCell previousCell;
-
-	public void SetApplyUrbanLevel (bool toggle) {
-		applyUrbanLevel = toggle;
-	}
-
-	public void SetUrbanLevel (float level) {
-		activeUrbanLevel = (int)level;
-	}
-
-	public void SetApplyFarmLevel (bool toggle) {
-		applyFarmLevel = toggle;
-	}
-
-	public void SetFarmLevel (float level) {
-		activeFarmLevel = (int)level;
-	}
-
-	public void SetApplyPlantLevel (bool toggle) {
-		applyPlantLevel = toggle;
-	}
-
-	public void SetPlantLevel (float level) {
-		activePlantLevel = (int)level;
-	}
-
-	public void SetApplySpecialIndex (bool toggle) {
-		applySpecialIndex = toggle;
-	}
-
-	public void SetSpecialIndex (float index) {
-		activeSpecialIndex = (int)index;
-	}
+    HexDirection dragDirection;
 
 	public void SetBrushSize (float size) {
 		brushSize = (int)size;
 	}
 
-	public void SetRiverMode (int mode) {
-		riverMode = (OptionalToggle)mode;
-	}
+    public void SetUseModeF(float mode)
+    {
+        SetUseMode((UseModes)mode);
+    }
 
-	public void SetRoadMode (int mode) {
-		roadMode = (OptionalToggle)mode;
-	}
+    public void SetUseMode(UseModes mode)
+    {
+        useMode = mode;
+        switch (mode)
+        {
+            case UseModes.Create:
+                SetCreateStatus(true);
+                Cursor.SetCursor(createCursor, Vector2.zero, CursorMode.Auto);
+                SetEditMode(true);
+                break;
+            case UseModes.Destroy:
+                SetCreateStatus(false);
+                Cursor.SetCursor(destroyCursor, Vector2.zero, CursorMode.Auto);
+                SetEditMode(true);
+                break;
+            case UseModes.Watch:
+                SetEditMode(false);
+                Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+                break;
+        }
+    }
 
-	public void SetWalledMode (int mode) {
-		walledMode = (OptionalToggle)mode;
-	}
+    public void SetCreateStatus(bool status)
+    {
+        isCreate = status;
+    }
 
 	public void SetEditMode (bool toggle) {
 		editMode = toggle;
-		hexGrid.ShowUI(!toggle);
 	}
 
-	public void ShowGrid (bool visible) {
-		if (visible) {
-			terrainMaterial.EnableKeyword("GRID_ON");
-		}
-		else {
-			terrainMaterial.DisableKeyword("GRID_ON");
-		}
-	}
 
 	void Awake () {
 		terrainMaterial.DisableKeyword("GRID_ON");
@@ -99,9 +80,6 @@ public class HexMapEditor : MonoBehaviour {
 		) {
 			HandleInput();
 		}
-		else {
-			previousCell = null;
-		}
 	}
 
 	void HandleInput () {
@@ -109,37 +87,10 @@ public class HexMapEditor : MonoBehaviour {
 		RaycastHit hit;
 		if (Physics.Raycast(inputRay, out hit)) {
 			HexCell currentCell = hexGrid.GetCell(hit.point);
-			if (previousCell && previousCell != currentCell) {
-				ValidateDrag(currentCell);
-			}
-			else {
-				isDrag = false;
-			}
 			if (editMode) {
 				EditCells(currentCell);
 			}
-			else {
-				hexGrid.FindDistancesTo(currentCell);
-			}
-			previousCell = currentCell;
 		}
-		else {
-			previousCell = null;
-		}
-	}
-
-	void ValidateDrag (HexCell currentCell) {
-		for (
-			dragDirection = HexDirection.NE;
-			dragDirection <= HexDirection.NW;
-			dragDirection++
-		) {
-			if (previousCell.GetNeighbor(dragDirection) == currentCell) {
-				isDrag = true;
-				return;
-			}
-		}
-		isDrag = false;
 	}
 
 	void EditCells (HexCell center) {
@@ -167,38 +118,15 @@ public class HexMapEditor : MonoBehaviour {
                 if (cell.GetNeighbor((HexDirection)i))
                 neighbors.Add(cell.GetNeighbor((HexDirection)i));
             }
-			if (applySpecialIndex) {
-				cell.SpecialIndex = activeSpecialIndex;
-			}
-			if (applyUrbanLevel) {
-				cell.UrbanLevel = activeUrbanLevel;
-			}
-			if (applyFarmLevel) {
-				cell.FarmLevel = activeFarmLevel;
-			}
-			if (applyPlantLevel) {
-				cell.PlantLevel = activePlantLevel;
-			}
-			if (riverMode == OptionalToggle.No) {
-				cell.RemoveRiver();
-			}
-			if (roadMode == OptionalToggle.No) {
-				cell.RemoveRoads();
-			}
-			if (walledMode != OptionalToggle.Ignore) {
-				cell.Walled = walledMode == OptionalToggle.Yes;
-			}
-			if (isDrag) {
-				HexCell otherCell = cell.GetNeighbor(dragDirection.Opposite());
-				if (otherCell) {
-					if (riverMode == OptionalToggle.Yes) {
-						otherCell.SetOutgoingRiver(dragDirection);
-					}
-					if (roadMode == OptionalToggle.Yes) {
-						otherCell.AddRoad(dragDirection);
-					}
-				}
-			}
+
+            if (isCreate)
+            {
+                cell.Seed();
+            }
+            else
+            {
+                cell.Flame();
+            }
 
 		}
 	}
