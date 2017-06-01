@@ -19,8 +19,6 @@ public class HexMapEditor : MonoBehaviour {
 
     bool isCreate = false;
 
-	bool applyUrbanLevel, applyFarmLevel, applyPlantLevel, applySpecialIndex;
-
 	public enum UseModes {
 		Watch, Create, Destroy
 	}
@@ -36,6 +34,12 @@ public class HexMapEditor : MonoBehaviour {
     {
         SetUseMode((UseModes)mode);
     }
+
+    public void ExitProgram()
+    {
+        Application.Quit();
+    }
+
 
     public void SetUseMode(UseModes mode)
     {
@@ -80,6 +84,10 @@ public class HexMapEditor : MonoBehaviour {
 		) {
 			HandleInput();
 		}
+        if (Input.GetAxisRaw("Cancel") > 0)
+        {
+            ExitProgram();
+        }
 	}
 
 	void HandleInput () {
